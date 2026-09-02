@@ -26,9 +26,9 @@ export LIB_NAME='ass'
 export LIPO_LIBS="libass"
 export LIB_DEPENDS_BIN="meson cmake pkg-config"
 export GIT_LOCAL_REPO=extra/ass
-export GIT_COMMIT=0.17.4
+export GIT_COMMIT=0.17.5
 export REPO_DIR=ass
-export GIT_REPO_VERSION=0.17.4
+export GIT_REPO_VERSION=0.17.5
 
 # you can export GIT_ASS_UPSTREAM=git@xx:yy/ASS.git use your mirror
 if [[ "$GIT_ASS_UPSTREAM" != "" ]] ;then
@@ -38,7 +38,7 @@ else
 fi
 
 # pre compiled
-export PRE_COMPILE_TAG_TVOS=ass-0.17.4-260408155409
-export PRE_COMPILE_TAG_MACOS=ass-0.17.4-260408155409
-export PRE_COMPILE_TAG_IOS=ass-0.17.4-260408155409
-export PRE_COMPILE_TAG_ANDROID=ass-0.17.4-260408155409
+export PRE_COMPILE_TAG_TVOS=ass-0.17.5-260827105429
+export PRE_COMPILE_TAG_MACOS=ass-0.17.5-260827105429
+export PRE_COMPILE_TAG_IOS=ass-0.17.5-260827105429
+export PRE_COMPILE_TAG_ANDROID=ass-0.17.5-260827105429

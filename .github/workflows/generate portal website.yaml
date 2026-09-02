@@ -1,0 +1,51 @@
+name: Generate Portal Website
+
+on:
+  workflow_dispatch:
+
+# 给 Action 赋予修改 Pages 的权限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 确保同一时间只有一个部署任务在运行
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: macos-latest # 因为你的工具链是 build/src/macos，必须在 Mac 环境下运行才能生成 macos-arm64 的配置
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      # custom domain cause 404 There isn't a GitHub Pages site here.
+      - name: Install Markdown Parser
+        run: pip3 install markdown --break-system-packages
+
+      - name: Install Custom ffmpeg8-bin
+        run: |
+          ./main.sh install -p macos -l "ffmpeg8-bin"
+
+      - name: Build Portal & Feature Matrix (with Test Videos)
+        run: |
+          chmod +x ./tools/portal-site/*.sh
+          ./tools/portal-site/main.sh
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './build/docs' # 指定刚才在脚本里创建的输出目录
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

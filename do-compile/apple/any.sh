@@ -79,8 +79,9 @@ do_lipo_all() {
         local inc_dst_dir="$uni_dir/$LIB_NAME"
         
         if [[ -d "$inc_src_dir" ]]; then
-            echo "copy include dir to $inc_dst_dir"
-            cp -Rf "$inc_src_dir" "$inc_dst_dir"
+            mkdir -p "$inc_dst_dir"
+            echo "copy include dir to $inc_dst_dir/"
+            cp -Rf "$inc_src_dir" "$inc_dst_dir/"
             
             local pc_src_dir="$MR_PRODUCT_ROOT/$LIB_NAME-$arch/lib/pkgconfig"
             if ls ${pc_src_dir}/*.pc >/dev/null 2>&1;then
@@ -101,6 +102,13 @@ do_lipo_all() {
                 my_sed_i "s|^prefix=.*|prefix=$escaped_p|" "$pc_dst_dir/"*.pc
                 my_sed_i "s|^libdir=.*|libdir=$escaped_p/lib|" "$pc_dst_dir/"*.pc
                 my_sed_i "s|^includedir=.*|includedir=$escaped_p/include|" "$pc_dst_dir/"*.pc
+
+                # fix tbd link path in pkgconfig
+                # matching: /path/to/libNAME.tbd or path/to/libNAME.tbd -> -lNAME
+                my_sed_i 's|[^ ]*lib\([^ /]*\)\.tbd|-l\1|g' "$pc_dst_dir/"*.pc
+                # remove xcode sdk include path
+                my_sed_i 's|-I/Applications/Xcode[^ ]*usr/include||g' "$pc_dst_dir/"*.pc
+                my_sed_i 's|-I/[^ ]*/SDKs/[^ ]*/usr/include||g' "$pc_dst_dir/"*.pc
             fi
         fi
     done
@@ -158,21 +166,6 @@ function do_make_xcframework() {
     done
 }
 
-function do_fix_pc() {
-    # fix tbd link path in pkgconfig
-    # matching: /path/to/libNAME.tbd or path/to/libNAME.tbd -> -lNAME
-    if [[ -d "${MR_BUILD_PREFIX}/lib/pkgconfig" ]]; then
-        for pc in "${MR_BUILD_PREFIX}/lib/pkgconfig/"*.pc; do
-            if [[ -f "$pc" ]]; then
-                echo "fix pkgconfig in $pc"
-                # fix tbd link path
-                my_sed_i 's|[^ ]*lib\([^ /]*\)\.tbd|-l\1|g' "$pc"
-                # remove xcode sdk include path
-                my_sed_i 's|-I/Applications/Xcode[^ ]*usr/include||g' "$pc"
-            fi
-        done
-    fi
-}
 
 function do_compile() {
     if [ ! -d $MR_BUILD_SOURCE ]; then
@@ -185,7 +178,7 @@ function do_compile() {
     fi
     
     mkdir -p "$MR_BUILD_PREFIX"
-    ./$LIB_NAME.sh
+    bash ./$LIB_NAME.sh
 }
 
 function resolve_dep() {

@@ -20,10 +20,10 @@ export LIB_NAME='dav1d'
 export LIPO_LIBS="libdav1d"
 export LIB_DEPENDS_BIN="meson ninja nasm"
 export GIT_LOCAL_REPO=extra/dav1d
-export GIT_COMMIT=1.5.3
+export GIT_COMMIT=1.5.4
 export GIT_WITH_SUBMODULE=0
 export REPO_DIR=dav1d
-export GIT_REPO_VERSION=1.5.3
+export GIT_REPO_VERSION=1.5.4
 
 # you can export GIT_DAV1D_UPSTREAM=git@xx:yy/dav1d.git use your mirror
 if [[ "$GIT_DAV1D_UPSTREAM" != "" ]] ;then
@@ -33,7 +33,7 @@ else
 fi
 
 # pre compiled
-export PRE_COMPILE_TAG_TVOS=dav1d-1.5.3-260228142936
-export PRE_COMPILE_TAG_MACOS=dav1d-1.5.3-260228142936
-export PRE_COMPILE_TAG_IOS=dav1d-1.5.3-260228142936
-export PRE_COMPILE_TAG_ANDROID=dav1d-1.5.3-260228142936
+export PRE_COMPILE_TAG_TVOS=dav1d-1.5.4-260824210640
+export PRE_COMPILE_TAG_MACOS=dav1d-1.5.4-260901182738
+export PRE_COMPILE_TAG_IOS=dav1d-1.5.4-260824210640
+export PRE_COMPILE_TAG_ANDROID=dav1d-1.5.4-260824210640

@@ -7,8 +7,16 @@
 set -e
 set -o pipefail
 
-export LIB_NAME=$1
+CONFIG_FILE="./configs/libs/${1}.sh"
+if [[ -L "$CONFIG_FILE" ]]; then
+    REAL_CONFIG_FILE=$(realpath "$CONFIG_FILE")
+    CONFIG_BASE=$(basename "$REAL_CONFIG_FILE")
+    export CONFIG_NAME="${CONFIG_BASE%.sh}"
+else
+    export CONFIG_NAME=$1
+fi
 export PLAT=$2
+export MR_PLAT=$PLAT
 
 if [[ -n $3 && "$3" == 'true' ]];then
     export DRYRUN=1 
@@ -24,9 +32,12 @@ fi
 
 export HOMEBREW_NO_AUTO_UPDATE=1
 export RELEASE_DATE=$(TZ=UTC-8 date +'%y%m%d%H%M%S')
-export RELEASE_VERSION=$(grep GIT_REPO_VERSION= ./configs/libs/${LIB_NAME}.sh | tail -n 1 | awk -F = '{printf "%s",$2}')
-export TAG=${LIB_NAME}-${RELEASE_VERSION}-${RELEASE_DATE}
-export TITLE="👏👏${LIB_NAME}-${PLAT}-${RELEASE_VERSION}"
+
+source ./configs/libs/${CONFIG_NAME}.sh
+export RELEASE_VERSION=$GIT_REPO_VERSION
+export TAG=${CONFIG_NAME}-${RELEASE_VERSION}-${RELEASE_DATE}
+
+export TITLE="👏👏${CONFIG_NAME}-${PLAT}-${RELEASE_VERSION}"
 
 ROOT_DIR=$PWD
 DIST_DIR=$ROOT_DIR/build/dist
@@ -36,7 +47,7 @@ function init_platform
 {
     local plat=$1
     echo "---init $plat src--------------------------------------"
-    ./main.sh init -p $plat -l ${LIB_NAME}
+    ./main.sh init -p $plat -l ${CONFIG_NAME}
     
     echo "---generate src log--------------------------------------"
     cd build/src/$plat
@@ -51,16 +62,16 @@ function compile_ios_platform
     local log_file="$DIST_DIR/ios-compile-log-$RELEASE_VERSION.md"
 
     if [[ $VERBOSE ]];then
-        ./main.sh compile -p ios -c build -l ${LIB_NAME} 2>&1 | tee -a "$log_file"
+        ./main.sh compile -p ios -c build -l ${CONFIG_NAME} 2>&1 | tee -a "$log_file"
     else
-        ./main.sh compile -p ios -c build -l ${LIB_NAME} >> "$log_file" 2>&1
+        ./main.sh compile -p ios -c build -l ${CONFIG_NAME} >> "$log_file" 2>&1
     fi
          
     cd build/product/ios/universal
-    zip -ryq $DIST_DIR/${LIB_NAME}-ios-universal-${RELEASE_VERSION}.zip ./*
+    zip -ryq $DIST_DIR/${CONFIG_NAME}-ios-universal-${RELEASE_VERSION}.zip ./*
     
     cd ../universal-simulator
-    zip -ryq $DIST_DIR/${LIB_NAME}-ios-universal-simulator-${RELEASE_VERSION}.zip ./*
+    zip -ryq $DIST_DIR/${CONFIG_NAME}-ios-universal-simulator-${RELEASE_VERSION}.zip ./*
     cd $ROOT_DIR
 }
 
@@ -70,14 +81,38 @@ function compile_macos_platform
     
     local log_file="$DIST_DIR/macos-compile-log-$RELEASE_VERSION.md"
 
+    local extra_args=""
+
     if [[ $VERBOSE ]];then
-        ./main.sh compile -p macos -c build -l ${LIB_NAME} 2>&1 | tee -a "$log_file"
+        ./main.sh compile -p macos -c build -l ${CONFIG_NAME} $extra_args 2>&1 | tee -a "$log_file"
     else
-        ./main.sh compile -p macos -c build -l ${LIB_NAME} >> "$log_file" 2>&1
+        ./main.sh compile -p macos -c build -l ${CONFIG_NAME} $extra_args >> "$log_file" 2>&1
+    fi
+
+    # Copy the architecture-specific binaries if they were compiled
+    if [[ "$ENABLE_BIN" == "1" ]]; then
+        mkdir -p build/product/macos/universal/${LIB_NAME}/bin
+        for arch in arm64 x86_64; do
+            local bin_dir="build/product/macos/${LIB_NAME}-${arch}/bin"
+            if [ -d "$bin_dir" ]; then
+                for bin_path in "$bin_dir"/*; do
+                    if [ -f "$bin_path" ]; then
+                        local bin=$(basename "$bin_path")
+                        # 1. Copy to universal folder before zipping
+                        cp "$bin_path" "build/product/macos/universal/${LIB_NAME}/bin/$bin-macos-${arch}"
+                        echo "Copied $bin_path to build/product/macos/universal/${LIB_NAME}/bin/$bin-macos-${arch}"
+
+                        # 2. Copy to release assets directory
+                        cp "$bin_path" "$DIST_DIR/$bin-macos-${arch}"
+                        echo "Copied $bin_path to $DIST_DIR/$bin-macos-${arch}"
+                    fi
+                done
+            fi
+        done
     fi
 
     cd build/product/macos/universal
-    zip -ryq $DIST_DIR/${LIB_NAME}-macos-universal-${RELEASE_VERSION}.zip ./*
+    zip -ryq $DIST_DIR/${CONFIG_NAME}-macos-universal-${RELEASE_VERSION}.zip ./*
     cd $ROOT_DIR
 }
 
@@ -88,16 +123,16 @@ function compile_tvos_platform
     local log_file="$DIST_DIR/android-compile-log-$RELEASE_VERSION.md"
 
     if [[ $VERBOSE ]];then
-        ./main.sh compile -p tvos -c build -l ${LIB_NAME} 2>&1 | tee -a "$log_file"
+        ./main.sh compile -p tvos -c build -l ${CONFIG_NAME} 2>&1 | tee -a "$log_file"
     else
-        ./main.sh compile -p tvos -c build -l ${LIB_NAME} >> "$log_file" 2>&1
+        ./main.sh compile -p tvos -c build -l ${CONFIG_NAME} >> "$log_file" 2>&1
     fi     
 
     cd build/product/tvos/universal
-    zip -ryq $DIST_DIR/${LIB_NAME}-tvos-universal-${RELEASE_VERSION}.zip ./*
+    zip -ryq $DIST_DIR/${CONFIG_NAME}-tvos-universal-${RELEASE_VERSION}.zip ./*
     
     cd ../universal-simulator
-    zip -ryq $DIST_DIR/${LIB_NAME}-tvos-universal-simulator-${RELEASE_VERSION}.zip ./*
+    zip -ryq $DIST_DIR/${CONFIG_NAME}-tvos-universal-simulator-${RELEASE_VERSION}.zip ./*
     cd $ROOT_DIR
 }
 
@@ -107,15 +142,15 @@ function compile_android_platform
     echo "---do compile android libs--------------------------------------"
     
     local log_file="$DIST_DIR/android-compile-log-$RELEASE_VERSION.md"
-
+    
     if [[ $VERBOSE ]];then
-        ./main.sh compile -p android -c build -l ${LIB_NAME} 2>&1 | tee -a "$log_file"
+        ./main.sh compile -p android -c build -l ${CONFIG_NAME} 2>&1 | tee -a "$log_file"
     else
-        ./main.sh compile -p android -c build -l ${LIB_NAME} >> "$log_file" 2>&1
+        ./main.sh compile -p android -c build -l ${CONFIG_NAME} >> "$log_file" 2>&1
     fi
 
     cd build/product/android/universal
-    zip -ryq $DIST_DIR/${LIB_NAME}-android-universal-${RELEASE_VERSION}.zip ./*
+    zip -ryq $DIST_DIR/${CONFIG_NAME}-android-universal-${RELEASE_VERSION}.zip ./*
     cd $ROOT_DIR
 }
 
@@ -124,19 +159,22 @@ function make_xcfmwk_bundle()
     echo "---skip apple xcframework--------------------------------------"
     # echo "---Zip apple xcframework--------------------------------------"
     # cd build/product/xcframework
-    # zip -ryq $DIST_DIR/${LIB_NAME}-apple-xcframework-${RELEASE_VERSION}.zip ./*
+    # zip -ryq $DIST_DIR/${CONFIG_NAME}-apple-xcframework-${RELEASE_VERSION}.zip ./*
     # cd $ROOT_DIR
 }
 
 function replace_tag()
 {
     local file=$1
+    if [ -L "$file" ]; then
+        file=$(realpath "$file")
+    fi
     local key=$2
 
     # check PRE_COMPILE_TAG_IOS
     if grep -q "$key" "$file"; then
         # replace PRE_COMPILE_TAG_IOS=new_tag
-        sed -i "" "s/^export $key=.*/export $key=$TAG/" $file
+        sed -i "" "s/^export $key=.*/export $key=$TAG/" "$file"
     else
         # PRE_COMPILE_TAG_IOS not found, append PRE_COMPILE_TAG_IOS
         [ -n "$(tail -c1 "$file")" ] && echo "" >> "$file"
@@ -146,7 +184,10 @@ function replace_tag()
 
 function upgrade()
 {
-    local file="configs/libs/${LIB_NAME}.sh"
+    local file="configs/libs/${CONFIG_NAME}.sh"
+    if [ -L "$file" ]; then
+        file=$(realpath "$file")
+    fi
     case $PLAT in
         ios)
             replace_tag $file PRE_COMPILE_TAG_IOS
@@ -174,7 +215,7 @@ function upgrade()
     esac
 
     git add $file
-    git commit -m "upgrade $LIB_NAME to $TAG for $PLAT by cd"
+    git commit -m "upgrade $CONFIG_NAME to $TAG for $PLAT by cd"
     git pull --rebase
     git push origin
 }
@@ -183,11 +224,11 @@ function publish()
 {
     echo "---Create Release--------------------------------------"
     if [[ $DRYRUN ]];then
-        echo "DRYRUN: gh release create $TAG -t $TITLE $DIST_DIR/*.*"
+        echo "DRYRUN: gh release create $TAG -t $TITLE $DIST_DIR/*"
         return
     fi
     upgrade
-    gh release create $TAG --target $(git branch --show-current) -t $TITLE $DIST_DIR/*.* --generate-notes
+    gh release create $TAG --target $(git branch --show-current) -t $TITLE $DIST_DIR/* --generate-notes
 }
 
 function main()
@@ -243,9 +284,4 @@ function main()
     esac
 }
 
-if [[ $LIB_NAME == 'test' ]];then
-    echo "test" > $DIST_DIR/test.md
-    publish
-else
-    main
-fi
+main

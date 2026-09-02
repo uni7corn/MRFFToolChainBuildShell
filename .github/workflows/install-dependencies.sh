@@ -2,7 +2,14 @@
 
 set -e
 
-LIB_NAME=$1
+CONFIG_FILE="./configs/libs/${1}.sh"
+if [[ -L "$CONFIG_FILE" ]]; then
+    REAL_CONFIG_FILE=$(realpath "$CONFIG_FILE")
+    CONFIG_BASE=$(basename "$REAL_CONFIG_FILE")
+    LIB_NAME="${CONFIG_BASE%.sh}"
+else
+    LIB_NAME=$1
+fi
 PLAT=$2
 
 case $LIB_NAME in
@@ -53,6 +60,9 @@ case $LIB_NAME in
                 ./main.sh install -l 'webp' -p $PLAT
             fi
         fi
+    ;;
+    ffmpeg8-bin)
+        ./main.sh install -l 'ass openssl3 opus bluray dav1d dvdnav uavs3d smb2 webp x264 x265' -p macos
     ;;
     ffmpeg7)
         if [[ $PLAT == all ]];then

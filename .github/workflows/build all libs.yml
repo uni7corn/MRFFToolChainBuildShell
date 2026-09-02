@@ -52,6 +52,8 @@ on:
           - bluray
           - dav1d
           - uavs3d
+          - x264
+          - x265
           - smb2
           - webp
           - ijkffmpeg
@@ -61,6 +63,7 @@ on:
           - ffmpeg6
           - ffmpeg7
           - ffmpeg8
+          - ffmpeg8-bin
       dryrun:
         description: 'just run workflow,but not deploy'
         required: false
@@ -71,7 +74,7 @@ on:
           - false
       verbose:
         description: 'print detail logs'
-        required: false
+        required: true
         type: choice
         default: 'false'
         options:
@@ -91,17 +94,22 @@ jobs:
     steps:
     - uses: nttld/setup-ndk@v1
       id: setup-ndk
+      if: |
+        github.event.inputs.platform == 'all' || 
+        github.event.inputs.platform == 'android'
       with:
         ndk-version: r27c
         add-to-path: true
+        link-to-sdk: true
         local-cache: false
     - name: Checkout code
       uses: actions/checkout@v4
     - name: Install cargo-c
-      run: cargo install cargo-c
+      uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-c
     - name: One Step
       run: |
-
         Platform=${{ inputs.platform }}
         DryRun=${{ inputs.dryrun }}
         Verbose=${{ inputs.verbose }}
@@ -192,6 +200,8 @@ jobs:
           "bluray"
           "dav1d"
           "uavs3d"
+          "x264"
+          "x265"
           "smb2"
           "webp"
           "lcms2"
@@ -206,6 +216,7 @@ jobs:
           "ffmpeg6"
           "ffmpeg7"
           "ffmpeg8"
+          "ffmpeg8-bin"
         )
 
         first=${{ inputs.first_library }}

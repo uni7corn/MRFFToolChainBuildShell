@@ -59,15 +59,15 @@ usage: ./main.sh compile [options]
 Compile libs, such as ass、ffmpeg...
 
 OPTIONS:
-    -c            Specify sub command (build,clean,rebuild) rebuild=clean+build, default is build
-    -a            Specify archs (x86_64,arm64,x86_64_simulator,arm64_simulator,all) all="x86_64,arm64,x86_64_simulator,arm64_simulator"
-    -l            Specify which libs need 'cmd' (openssl|opus|bluray|dav1d|dvdread|freetype|fribidi|harfbuzz|unibreak|ass|ffmpeg), can't be nil
-    -s            Specify workspace dir
-    -j            Force number of cores to be used
-    -lib-config   Read library config from specified path,eg: -lib-path ~/matt/lib/ffmpeg.sh
-    --help        Show help banner of compile command
-    --debug       Enable debug mode (disable by default)
-    --fmwk        Make xcframework(apple platform only)
+    -c                  Specify sub command (build,clean,rebuild) rebuild=clean+build, default is build
+    -a                  Specify archs (x86_64,arm64,x86_64_simulator,arm64_simulator,all) all="x86_64,arm64,x86_64_simulator,arm64_simulator"
+    -l                  Specify which libs need 'cmd' (openssl|opus|bluray|dav1d|dvdread|freetype|fribidi|harfbuzz|unibreak|ass|ffmpeg), can't be nil
+    -s                  Specify workspace dir
+    -j                  Force number of cores to be used
+    -lib-config         Read library config from specified path,eg: -lib-path ~/matt/lib/ffmpeg.sh
+    --help              Show help banner of compile command
+    --debug             Enable debug mode (disable by default)
+    --fmwk              Make xcframework(apple platform only)
 EOF
 }
 
